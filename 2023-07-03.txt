@@ -1,0 +1,1145 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <windows.h>
+#include <gl/gl.h>
+#include <math.h>
+#include <wingdi.h>
+#include <winuser.h>
+#pragma comment(lib, "opengl32.lib")
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
+void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
+void DisableOpenGL(HWND, HDC, HGLRC);
+
+typedef enum { PLAYERSTEP, COMPERSTEP } TBstep;
+
+TBstep whoStep = PLAYERSTEP;
+int widthO, heightO;
+int width = 1000;//размер окна по ширине
+int height = 500;//размер окна по высоте
+BOOL shotShip = FALSE;
+int shotShipX, shotShipY;
+#define mapW 10//кол-во клеток по ширине
+#define mapH 10//кол-во клеток по высоте
+#define mapWS 0.99//масштаб по ширине 0-1.0 (float)
+#define mapHS 0.99//масштаб по высоте 0-1.0 (float)
+#define delay 1.0//задержка анимации
+
+//float theta = 0.0f;//угол поворота
+float theta = 0;//угол поворота
+//float scale = 1;//масштаб при анимации
+int n;
+//int ship_sizes[] = { 2, 1 ,1 };
+int ship_sizes[] = { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 };
+int ship_count;
+time_t seconds;
+char iStr[3]; jStr[3]; ijStr[16];
+HDC hhDC;
+BOOL rMouse = FALSE;
+
+typedef struct
+{
+	BOOL ship;//корабль
+	BOOL open;//клетка открыта
+	BOOL miss;//мимо
+	BOOL shot;//попал
+	BOOL kill;//утопил
+	signed char shipFront;//клеток до конца корабля с текущей
+	signed char shipBack;//клеток до начала корабля с текущей
+	BOOL dir;//напрвление FALSE-горизонт TRUE-вертикаль
+	float theta;//угол поворота
+	float scale;//масштаб при анимации
+	time_t seconds;//начало анимации
+} TCell;
+
+typedef struct { int x; int y; BOOL shot; } TCoord;
+struct { TCoord was; TCoord now; } go;
+
+typedef struct
+{
+	int keep;//осталось отсеков кораблей всего
+	int step;//количество ходов по промахам (miss)
+} TShips;
+TShips ships[2];//0 - поле PLAYER, 1 - поле COMPER
+
+typedef struct
+{
+	int x;
+	int y;
+	BOOL d;
+	int n;
+}TStep;
+
+TCell map[2][mapW][mapH];
+TStep step[10];
+
+BOOL IsCellInMap(int x, int y)
+{
+	return (x >= 0) && (y >= 0) && (x < mapW) && (y < mapH);
+}
+
+void ShowShip()//корабль
+{
+	float gap = 0.0;//зазор от края клетки 0-0,5
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor3f(0.3, 1.0, 0.6); glVertex2f(gap, 1 - gap);
+	glColor3f(0.2, 0.9, 0.5); glVertex2f(1 - gap, 1 - gap);
+	glVertex2f(gap, gap);
+	glColor3f(0.1, 0.8, 0.4); glVertex2f(1 - gap, gap);
+	glEnd();
+}
+
+void ShowShipMiss()//(точка) промазал, мимо, холостой выстрел
+{
+	glEnable(GL_POINT_SMOOTH);
+	glPointSize(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * 0.15);
+	glBegin(GL_POINTS);
+	glColor3f(0, 0, 0);
+	glVertex2f(0.5, 0.5);
+	glEnd();
+	glDisable(GL_POINT_SMOOTH);
+}
+
+void ShowShipShot()//попал, ранил, подбил
+{
+	float gap = 0.1;//зазор от края клетки 0-0,5
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
+	glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap);
+	glColor3f(1, 0, 0);
+	glBegin(GL_LINES);
+	glVertex2f(gap, gap);
+	glVertex2f(1 - gap, 1 - gap);
+	glVertex2f(gap, 1 - gap);
+	glVertex2f(1 - gap, gap);
+	glEnd();
+	glDisable(GL_LINE_SMOOTH);
+}
+void ShowShipKill()//утопил
+{
+	float gap = 0.05;//зазор от края клетки 0-0,5
+	//	glEnable(GL_POINT_SMOOTH);
+	glPointSize(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 1.45);
+	glBegin(GL_POINTS);
+	glColor3f(1, 0, 0);
+	glVertex2f(gap, gap);
+	glVertex2f(gap, 1 - gap);
+	glVertex2f(1 - gap, 1 - gap);
+	glVertex2f(1 - gap, gap);
+	glEnd();
+	//	glDisable(GL_POINT_SMOOTH);	glEnable(GL_LINE_SMOOTH);//сглаживание линий
+	glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 1.45);
+	glColor3f(1, 0, 0);
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(gap, gap);
+	glVertex2f(gap, 1 - gap);
+	glVertex2f(1 - gap, 1 - gap);
+	glVertex2f(1 - gap, gap);
+	glEnd();
+	glDisable(GL_LINE_SMOOTH);
+
+
+}
+
+void ShowField()
+{
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor3f(0.3, 0.6, 1.0); glVertex2f(0, 1);
+	glColor3f(0.2, 0.5, 0.9); glVertex2f(1, 1);	glVertex2f(0, 0);
+	glColor3f(0.1, 0.4, 0.8); glVertex2f(1, 0);
+	glEnd();
+}
+
+void ShowFieldOpen()
+{
+	float gap = 0.11;//зазор от края клетки 0-0,5
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor3f(0, 0.2, 0.4); glVertex2f(gap, 1 - gap);
+	glColor3f(0, 0.25, 0.5); glVertex2f(1 - gap, 1 - gap);	glVertex2f(gap, gap);
+	glColor3f(0, 0.3, 0.6); glVertex2f(1 - gap, gap);
+	glEnd();
+}
+
+void ScreeToOpenGL(HWND hwnd, int x, int y, float* ox, float* oy)//перевод координат окна в OPENGL
+{
+	RECT rct;
+	GetClientRect(hwnd, &rct);
+	*ox = ((2 * x / (float)rct.right - 1) - (1 - mapWS) / 2) * mapW / mapWS;
+	*oy = ((1 - y / (float)rct.bottom) - (1 - mapHS) / 2) * mapH / mapHS;
+	//	*ox = 2.0 * (x / (float)rct.right * mapW) - (float)width / height * mapW;//500*500
+//	*ox = 2.0 * (x / (float)rct.right * mapW) - mapW;//1000*500
+//	*oy = (mapH - y / (float)rct.bottom * mapH);// / mapHS - (1 - mapHS);
+//	*ox = 2.0 * (x / (float)rct.right * mapW);
+//	*oy = mapH - y / (float)rct.bottom * mapH;
+}
+
+//void Game_New()
+//{
+//	srand(time(NULL));
+//	memset(mapCm, 0, sizeof(mapCm));
+//	Generate_Ships();
+/*	for (int i = 0; i < 50; i++)
+	{
+		int x = rand() % mapW;
+		int y = rand() % mapH;
+		if (mapMy[x][y].ship) i--;
+		else mapMy[x][y].ship = TRUE;
+	}*/
+	//}
+
+void Count_Ships0()
+{
+	int sum = 0;
+	for (int i = 0; i < ship_count; i++)
+	{
+		sum += ship_sizes[i];
+	}
+	for (n = 0; n < 2; n++)
+	{
+		ships[n].keep = sum;
+	}
+}
+
+void Generate_Ships()//Функция для генерации кораблей в случайных позициях на доске. Корабли могут быть различных размеров, например, 1, 2, 3, 4 клетки.
+{
+	//	srand(rand());
+	//	Sleep(rand()%60);
+	srand(time(NULL));
+	memset(map, 0, sizeof(map));
+
+	for (int n = 1; n >= 0; n--)
+	{
+		//	int ship_sizes[] = { 1 };
+		ship_count = sizeof(ship_sizes) / sizeof(ship_sizes[0]);// *(1 - n);
+		for (int i = 0; i < ship_count; i++)
+		{
+			int ship_size = ship_sizes[i];
+			int x, y, dir;
+			int iteration = 1000;//не помещаются корабли
+			do
+			{
+//				x = rand() * 1.0 / RAND_MAX * mapW;
+//				y = rand() * 1.0 / RAND_MAX * mapH;
+//				dir = rand() * 1.0 / RAND_MAX * 2;
+				x = rand() % mapW;
+				y = rand() % mapH;
+				dir = rand() % 2;
+				iteration--;//не помещаются корабли
+				if (iteration < 0) break;//не помещаются корабли
+			} while (!is_valid(n, x, y, ship_size, dir));
+			if (iteration < 0) continue;//не помещаются корабли
+			for (int j = 0; j < ship_size; j++)
+			{
+				if (dir == 0)
+				{
+					map[n][x + j][y].ship = TRUE;
+					map[n][x + j][y].shipFront = ship_size - j;
+					map[n][x + j][y].shipBack = 1 + j;
+					map[n][x + j][y].dir = FALSE;
+				}
+				else
+				{
+					map[n][x][y + j].ship = TRUE;
+					map[n][x][y + j].shipFront = ship_size - j;
+					map[n][x][y + j].shipBack = 1 + j;
+					map[n][x][y + j].dir = TRUE;
+				}
+			}
+			ships[n].keep += ship_sizes[i];
+		}
+	}
+}
+
+int is_valid(int n, int x, int y, int size, int dir)//Функция проверяет, можно ли разместить корабль в данной позиции.Функция должна учитывать, что корабли не должны налегать друг на друга, и должны находиться в пределах доски
+{
+	if ((x + size > mapW) * (1 - dir) || (y + size * dir > mapH) * dir) return 0;//контроль размещения корабля в границах поля
+	for (int i = x; i < x + size * (1 - dir) + dir; i++)//проверка горизонтального корабля
+		for (int j = y; j < y + size * dir + (1 - dir); j++)//проверка вертикального корабля
+			for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+				for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+					if (ii >= 0 && ii < mapW && jj >= 0 && jj < mapH)//контроль границ поля вокруг i и j
+						if (map[n][ii][jj].ship != FALSE) return 0;
+	return 1;
+}
+
+void Decorate_Game_Over(int i, int j)
+{
+	map[n][i][j].theta += 0.1;
+	glTranslatef(0.5, 0.5, 0);
+	map[n][i][j].scale = 0.1 * ((2 * n - 1) * cos(map[n][i][j].theta) - 1) + 1;
+	glScalef(map[n][i][j].scale, map[n][i][j].scale, 0.0f);
+	glTranslatef(-0.5, -0.5, 0);
+}
+
+void Decorate(int i, int j)//анимация
+{
+	Sleep(1);
+	glTranslatef(0.5, 0.5, 0);
+	if (map[n][i][j].shot || map[n][i][j].kill)
+	{
+		map[n][i][j].theta += 1;
+		map[n][i][j].scale = 0.1 * ((2 * n - 1) * cos(map[n][i][j].theta) - 1) + 1;
+		glScalef(map[n][i][j].scale, map[n][i][j].scale, 0.0f);
+	}
+	else
+	{
+		srand(time(NULL));
+		map[n][i][j].theta += 90 * (roundf(2 * (rand() % 2)) - 1);
+		glRotatef(map[n][i][j].theta, 0, 0, 1);
+		//	glRotatef(180, 0, 0, 1);
+	}
+	glTranslatef(-0.5, -0.5, 0);
+}
+
+int Ship_Kill(int ii, int jj)
+{
+	int i, j;
+	i = ii;
+	j = jj;
+	for (; map[n][i][j].shipFront > 0 && IsCellInMap(i, j);)
+	{
+		if (!map[n][i][j].shot) return 0;
+		if (!map[n][i][j].dir) i++;
+		else j++;
+	}
+	i = ii;
+	j = jj;
+	for (; map[n][i][j].shipBack > 0 && IsCellInMap(i, j);)
+	{
+		if (!map[n][i][j].shot) return 0;
+		if (!map[n][i][j].dir) i--;
+		else j--;
+	}
+	return 1;
+}
+
+void Ship_Kill_TRUE(int i, int j)
+{
+	char key;
+	int iw, jw;
+	i -= (map[n][i][j].shipBack - 1) * (1 - map[n][i][j].dir);
+	j -= (map[n][i][j].shipBack - 1) * map[n][i][j].dir;
+	for (; map[n][i][j].shipFront > 0;)
+		if (IsCellInMap(i, j) || 1)//-возможно зависает
+		{
+			map[n][i][j].kill = TRUE;
+			map[n][i][j].seconds = time(NULL);
+			iw = i;
+			jw = j;
+			if (!map[n][i][j].dir) i++;
+			else j++;
+		}
+
+//	do
+	{
+//	key = _getch();
+	snprintf(iStr, strlen(iStr) + 4, "%d", iw);
+	snprintf(jStr, strlen(jStr) + 4, "%d", jw);
+	snprintf(ijStr, sizeof ijStr, "%s%s%s", iStr, " ", jStr);
+//	TextOutA(hhDC, 10, 50, ijStr, strlen(ijStr) + 0);
+//	} while (key != ' ');
+	} //while (rMouse);
+	rMouse = TRUE;
+//	for (int sl = 0; sl < 30; sl++) Sleep(1);
+}
+
+void Miss_Around_Ship_TRUE(int i, int j)
+{
+	int x, y;
+	x = i - (map[n][i][j].shipBack - 1) * (1 - map[n][i][j].dir);
+	y = j - (map[n][i][j].shipBack - 1) * map[n][i][j].dir;
+	i = x;
+	j = y;
+	for (; map[n][i][j].shipFront > 0;)
+	{
+		for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+			for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+				if (IsCellInMap(ii, jj))//контроль границ поля вокруг i и j
+					//				if (ii >= 0 && ii < mapW && jj >= 0 && jj < mapH)//контроль границ поля вокруг i и j
+					if (!map[n][ii][jj].ship && !map[n][ii][jj].kill && !map[n][ii][jj].open)
+					{
+						map[n][ii][jj].open = TRUE;
+						map[n][ii][jj].miss = TRUE;
+						map[n][ii][jj].seconds = time(NULL);
+					}
+		if (!map[n][i][j].dir) i++;
+		else j++;
+	}
+}
+
+void Miss_Coner_Ship_TRUE(int n, int i, int j)
+{
+	for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+		for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+			if (IsCellInMap(ii, jj))//контроль границ поля вокруг i и j
+				if (!map[n][ii][jj].miss && !map[n][ii][jj].open && abs(i - ii) == abs(j - jj))
+				{
+					map[n][ii][jj].open = TRUE;
+					//					map[n][ii][jj].miss = TRUE;
+					map[n][ii][jj].seconds = time(NULL);
+				}
+}
+
+void Comp_Step0()
+{
+	int i, j, ii, jj;
+	srand(time(NULL));
+	if (go.now.shot && !map[0][go.now.x][go.now.y].kill)
+	{
+		i = go.now.x;
+		j = go.now.y;
+		if (go.now.shot && go.was.shot)
+		{
+			ii = go.now.x - go.was.x;
+			jj = go.now.y - go.was.y;
+			//			i += go.now.x - go.was.x;
+			//			j += go.now.y - go.was.y;
+			if (!map[0][i + ii][j + jj].ship || !IsCellInMap(i + ii, j + jj))
+			{
+				ii *= -1;
+				jj *= -1;
+			}
+		}
+		else
+		{
+			int try = 0;
+			do
+			{
+				do
+				{
+					ii = rand() % 3 - 1;
+					jj = rand() % 3 - 1;
+				} while (fabs(ii) == fabs(jj) || !IsCellInMap(i + ii, j + jj));
+				try++;
+			} while (map[0][i + ii][j + jj].open && try < 100);
+		}
+
+
+		//		go.now.x = i;
+		//		go.now.y = j;
+		i = i + ii;
+		j = j + jj;
+	}
+	else
+	{
+		do
+		{
+			i = rand() % mapW;
+			j = rand() % mapH;
+		} while (map[0][i][j].open && !IsCellInMap(i, j));
+	}
+	map[0][i][j].open = TRUE;
+	if (!map[0][i][j].ship)
+	{
+		whoStep = PLAYERSTEP;
+		//		go.now.x = i;
+		//		go.now.y = j;
+		//		go.now.shot = FALSE;
+	}
+	else
+	{
+		go.was.x = go.now.x;
+		go.was.y = go.now.y;
+		go.now.x = i;
+		go.now.y = j;
+		go.was.shot = go.now.shot;
+		go.now.shot = TRUE;
+	}
+	seconds = time(NULL);
+}
+
+void Comp_Step1()
+{
+	int i = go.now.x;
+	int j = go.now.y;
+	srand(time(NULL));
+	do
+	{
+		i = rand() % mapW;
+		j = rand() % mapH;
+	} while (map[0][i][j].open);
+	map[0][i][j].open = TRUE;
+	if (!map[0][i][j].ship)
+	{
+		whoStep = PLAYERSTEP;
+	}
+	seconds = time(NULL);
+	go.now.x = i;
+	go.now.y = j;
+}
+
+void Comp_Step10()
+{
+	int i, j, ii, jj;
+	//	BOOL shot = FALSE;
+	srand(time(NULL));
+	if (!shotShip)
+	{
+		do
+		{
+			i = rand() % mapW;
+			j = rand() % mapH;
+		} while (map[0][i][j].open);
+		map[0][i][j].open = TRUE;
+		//Miss_Around_Ship_TRUE(0, i, j);
+	}
+	else
+	{
+		i = shotShipX;
+		j = shotShipY;
+	}
+
+	while (map[0][i][j].ship)
+	{
+		int try = 0;
+		do
+		{
+			do
+			{
+				ii = rand() % 3 - 1;
+				jj = rand() % 3 - 1;
+			} while (fabs(ii) == fabs(jj) || !IsCellInMap(i + ii, j + jj));
+			try++;
+		} while (map[0][i + ii][j + jj].open && try < 100);
+		if (Ship_Kill(0, i, j))
+		{
+			Ship_Kill_TRUE(0, i, j);
+			map[0][i][j].seconds = time(NULL);
+			Miss_Around_Ship_TRUE(0, i, j);
+		}
+		if (map[0][i][j].ship && !map[0][i][j].kill) shotShip = TRUE;
+		else shotShip = FALSE;
+		shotShipX = i;
+		shotShipY = j;
+		i += ii;
+		j += jj;
+		map[0][i][j].open = TRUE;
+	}
+	whoStep = PLAYERSTEP;
+}
+
+void CompStep()
+{
+	int i, j, ii, jj, edit;
+	srand(time(NULL));
+	if (ships[0].keep == 0) return;
+	if (map[0][go.now.x][go.now.y].kill)
+	{
+		go.now.shot = FALSE;
+		go.was.shot = FALSE;
+	}
+	if (go.was.shot)
+	{
+		i = go.now.x;
+		j = go.now.y;
+		ii = go.now.x - go.was.x;
+		jj = go.now.y - go.was.y;
+		if (map[0][i + ii][j + jj].miss || !IsCellInMap(i + ii, j + jj))
+		{
+			go.now = go.was;
+			go.was.x = i;
+			go.was.y = j;
+			i = go.now.x;
+			j = go.now.y;
+			ii *= -1;//ii = go.now.x - go.was.x;
+			jj *= -1;//jj = go.now.y - go.was.y;
+		}
+		edit = -1;
+		do
+		{
+			edit++;
+			i += ii;
+			j += jj;
+		} while (map[0][i][j].shot);
+		//		go.was = go.now;
+		go.was.x = go.now.x + ii * edit;
+		go.was.y = go.now.y + jj * edit;
+		go.now.x = i;
+		go.now.y = j;
+		map[0][i][j].open = TRUE;
+		if (!map[0][i][j].ship)
+		{
+			go.now.x = i - 2 * ii;
+			go.now.y = j - 2 * jj;
+			go.now.shot = TRUE;
+			whoStep = PLAYERSTEP;
+		}
+	}
+	else
+	{
+		if (go.now.shot)
+		{
+			i = go.now.x;
+			j = go.now.y;
+			int try = 0;
+			do
+			{
+				do
+				{
+//					ii = rand() * 1.0 / RAND_MAX * 3 - 1;
+//					jj = rand() * 1.0 / RAND_MAX * 3 - 1;
+					ii = rand() % 3 - 1;
+					jj = rand() % 3 - 1;
+				} while (fabs(ii) == fabs(jj) || !IsCellInMap(i + ii, j + jj));
+				try++;
+			} while (map[0][i + ii][j + jj].open && try < 100);
+			i += ii;
+			j += jj;
+			go.was = go.now;
+			go.now.x = i;
+			go.now.y = j;
+			map[0][i][j].open = TRUE;
+			if (!map[0][i][j].ship)
+			{
+				go.now = go.was;
+				go.was.shot = FALSE;
+				whoStep = PLAYERSTEP;
+			}
+		}
+		else
+		{
+			do
+			{
+//				i = rand() * 1.0 / RAND_MAX * mapW;
+//				j = rand() * 1.0 / RAND_MAX * mapH;
+				i = rand() % mapW;
+				j = rand() % mapH;
+			} while (map[0][i][j].open);// && !IsCellInMap(i, j));
+			go.now.x = i;
+			go.now.y = j;
+			map[0][i][j].open = TRUE;
+			if (map[0][i][j].ship) go.now.shot = TRUE;
+			else
+			{
+				go.now.shot = FALSE;
+				whoStep = PLAYERSTEP;
+			}
+		}
+	}
+	seconds = time(NULL);
+}
+
+int Count(int n)
+{
+	int countOpen = 0;
+	for (int j = 0; j < mapH; j++)
+		for (int i = 0; i < mapW; i++)
+			if (map[n][i][j].shot) countOpen++;
+	//			if (map[n][i][j].miss && !map[n][i][j].kill) countOpen++;
+	return countOpen;
+}
+
+void CompShips()
+{
+	memset(step, 0, sizeof(step));
+	int ship_step = sizeof(ship_sizes) / sizeof(ship_sizes[0]);
+	for (int i = 0; i < ship_step; i++) step[i].n = ship_sizes[i];
+}
+
+void GridBox()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glLineWidth(4);
+
+	glColor3f(1, 0, 0);
+	glBegin(GL_LINES);
+
+	for (float i = 0; i <= mapW; i += mapW)
+	{
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS - i * mapWS / mapW), -mapHS * (2 * !whoStep - 1));
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS - i * mapWS / mapW), +mapHS * (2 * !whoStep - 1));
+	}
+	for (float j = 0; j <= mapH; j += mapH)
+	{
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+		glVertex2f((2 * !whoStep - 1) * (0.5 - 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+	}
+
+	glEnd();
+
+	glPopMatrix();
+}
+
+
+void GridStep()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glLineWidth(1);
+
+	glColor3f(0, 0, 1);
+	glBegin(GL_LINES);
+
+	for (float i = 0; i <= mapW; i++)
+	{
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS - i * mapWS / mapW), -mapHS * (2 * !whoStep - 1));
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS - i * mapWS / mapW), +mapHS * (2 * !whoStep - 1));
+	}
+	for (float j = 0; j <= mapH; j++)
+	{
+		glVertex2f((2 * !whoStep - 1) * (0.5 + 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+		glVertex2f((2 * !whoStep - 1) * (0.5 - 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+	}
+
+	glEnd();
+
+	glPopMatrix();
+}
+
+void GameShow()
+{
+	float k = 1;
+	glLoadIdentity();
+	if (k > 1) glScalef(mapWS / mapW / k, 2.0 * mapHS / mapH, 1);
+	else glScalef(mapWS / mapW, 2.0 * k * mapHS / mapH, 1);
+
+
+	for (n = 1; n >= 0; n--)
+	{
+		glPushMatrix();
+		glTranslatef(-mapW * 0.5 * (1 - (2 * n - 1) / mapWS), -mapH * 0.5, 0);
+		//	glTranslatef(-mapW * 0.5 * (1 + 1 / mapWS), -mapH * 0.5, 0);//левое поле
+		//	glTranslatef(-mapW * 0.5 * (1 - 1 / mapWS), -mapH * 0.5, 0);//правое поле
+		//**************************************************************************************************************
+		for (int j = 0; j < mapH; j++)
+			for (int i = 0; i < mapW; i++)
+			{
+				glPushMatrix();
+
+				glTranslatef(i, j, 0);
+
+				if ((time(NULL) - map[n][i][j].seconds) <= delay) Decorate(i, j);
+
+				ShowField();
+
+				if (ships[n].keep == 0 && (ships[0].keep == 0 || ships[1].keep == 0)) Decorate_Game_Over(i, j);
+				if (ships[0].keep == 0 && n == 1 && map[n][i][j].ship) ShowShip();//отображение кораблей компа
+
+				if (n == 0 && map[n][i][j].ship) ShowShip();//отображение моих кораблей
+				//				if (map[n][i][j].ship) ShowShip();//отображение моих кораблей всегда
+				if (map[n][i][j].open)
+				{
+					if (!map[n][i][j].ship && !map[n][i][j].miss)
+					{
+						ships[n].step++;/////////////////////////////
+						//						if (whoStep == COMPERSTEP) ships[0].step++;/////////////////////////////
+						//						if (whoStep == PLAYERSTEP) ships[1].step++;/////////////////////////////
+						map[n][i][j].miss = TRUE;
+						map[n][i][j].seconds = time(NULL);
+					}
+					else if (map[n][i][j].ship && !map[n][i][j].shot)
+					{
+						if (ships[n].keep >= 0) ships[n].keep--;/////////////////////////////
+						map[n][i][j].shot = TRUE;
+						if (!map[n][i][j].kill && n == 1) Miss_Coner_Ship_TRUE(n, i, j);
+						map[n][i][j].seconds = time(NULL);
+						if (Ship_Kill(i, j))
+						{
+							map[n][i][j].seconds = time(NULL);
+							Ship_Kill_TRUE(i, j);
+							Miss_Around_Ship_TRUE(i, j);
+						}
+					}
+					if (map[n][i][j].ship) ShowShip();
+					if (map[n][i][j].miss) ShowShipMiss();
+					if (map[n][i][j].shot) ShowShipShot();
+					if (map[n][i][j].kill) ShowShipKill();
+				}
+				if (whoStep == COMPERSTEP && time(NULL) - seconds >= delay + 0.5) CompStep();//<---ход компа<---ход компа
+
+//				sprintf(c, "hhhhhh");
+//				TextOutA(hhDC, 0, 0, c, strlen(c) + 1);
+				snprintf(iStr, strlen(iStr) + 4, "%d", go.now.x);
+				snprintf(jStr, strlen(jStr) + 4, "%d", go.now.y);
+				snprintf(ijStr, sizeof ijStr, "%s%s%s", iStr, " ", jStr);
+//				TextOutA(hhDC, 10, 10, ijStr, strlen(ijStr) + 0);
+
+				glPopMatrix();
+			}
+		//**************************************************************************************************************
+		glPopMatrix();
+	}
+}
+
+void WindowsSize(widthO, heightO)
+{
+	float k = 0.5 * widthO / heightO;
+	glViewport(0, 0, widthO, heightO);
+	glLoadIdentity();
+	if (k >= 1) glOrtho(-k, k, -1, 1, -1, 1);
+	else glOrtho(-1, 1, -1 / k, 1 / k, -1, 1);
+}
+
+void Axis()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glLineWidth(1);
+	glColor3f(1, 0, 0);
+
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
+	glEnable(GL_LINE_STIPPLE);//прерывистая линия
+	glLineStipple(2, 0b1111100110011111);//маска
+
+	glBegin(GL_LINES);
+	glVertex2f(-1, 0);
+	glVertex2f(1, 0);
+	glVertex2f(0, -1);
+	glVertex2f(0, 1);
+	glVertex2f(-0.5, -1);
+	glVertex2f(-0.5, 1);
+	glVertex2f(0.5, -1);
+	glVertex2f(0.5, 1);
+	glEnd();
+
+	glDisable(GL_LINE_STIPPLE);
+	glDisable(GL_LINE_SMOOTH);
+
+	glPopMatrix();
+}
+
+void GridWindow()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glLineWidth(1);
+	glColor3f(0.5, 0.5, 0.5);
+	glBegin(GL_LINES);
+	for (float i = 0; i <= mapW; i++)
+	{
+		glVertex2f(0.5 + 0.5 * mapWS - i * mapWS / mapW, -mapHS);
+		glVertex2f(0.5 + 0.5 * mapWS - i * mapWS / mapW, mapHS);
+	}
+	for (float j = 0; j <= mapH; j++)
+	{
+		glVertex2f(0.5 + 0.5 * mapWS, -mapHS + 2 * j * mapHS / mapH);
+		glVertex2f(0.5 - 0.5 * mapWS, -mapHS + 2 * j * mapHS / mapH);
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+void Grid()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glLineWidth(1);
+	glColor3f(1, 0, 0);
+
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(1, 1);
+	glVertex2f(1, -1);
+	glVertex2f(-1, -1);
+	glVertex2f(-1, 1);
+	glEnd();
+
+	glColor3f(0, 0, 1);
+	glBegin(GL_LINES);
+	for (int m = -1; m < 2; m += 2)
+	{
+		for (float i = 0; i <= mapW; i++)
+		{
+			glVertex2f(m * (0.5 + 0.5 * mapWS - i * mapWS / mapW), -mapHS * m);
+			glVertex2f(m * (0.5 + 0.5 * mapWS - i * mapWS / mapW), mapHS * m);
+		}
+		for (float j = 0; j <= mapH; j++)
+		{
+			glVertex2f(m * (0.5 + 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+			glVertex2f(m * (0.5 - 0.5 * mapWS), -mapHS + 2 * j * mapHS / mapH);
+		}
+	}
+	glEnd();
+
+	glPopMatrix();
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	WNDCLASSEX wcex;
+	HWND hwnd;
+	HDC hDC;
+	HGLRC hRC;
+	MSG msg;
+	BOOL bQuit = FALSE;
+	//	float theta = 0.0f;//угол поворота
+
+		/* register window class */
+	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.style = CS_OWNDC;
+	wcex.lpfnWndProc = WindowProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wcex.lpszMenuName = NULL;
+	wcex.lpszClassName = "GLSample";
+	wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);;
+
+
+	if (!RegisterClassEx(&wcex))
+		return 0;
+
+	/* create main window */
+	hwnd = CreateWindowEx(0,
+		"GLSample",
+		"Морской бой",//"OpenGL Sample",
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		width,//размер окна по X
+		height,//размер окна по Y
+		NULL,
+		NULL,
+		hInstance,
+		NULL);
+
+	ShowWindow(hwnd, nCmdShow);
+
+	/* enable OpenGL for the window */
+	EnableOpenGL(hwnd, &hDC, &hRC);
+	WindowsSize(widthO, heightO);//размер окна при старте
+
+	//	float k = 0.5 * width / (float)height;
+	if (mapWS > 1 || mapHS > 1) return 0;
+	//	Game_New();
+	memset(ships, 0, sizeof(ships));
+	Generate_Ships();
+	CompShips();
+	hhDC = hDC;
+	//	Count_Ships();//подсчёт кораблей
+	//	go.now.shot = FALSE;
+	//	go.was.shot = FALSE;
+	//	go.now.x = -1;
+	//	go.now.y = -1;
+	//	go.was.x = -1;
+	//	go.was.y = -1;
+
+		/* program main loop */
+	while (!bQuit)
+	{
+		/* check for messages */
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			/* handle or dispatch messages */
+			if (msg.message == WM_QUIT)
+			{
+				bQuit = TRUE;
+			}
+			else
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else
+		{
+			/* OpenGL animation code goes here */
+
+//			glClearColor(0.7f, 1.0f, 0.7f, 0.0f);
+//			glClearColor(0.6f, 0.9f, 0.6f, 0.0f);
+//			glClearColor(1.0f, 0.5f, 0.5f, 0.0f);//цвет окна
+			glClearColor(0.0f, 0.0f, 0.5f, 0.0f);//цвет окна
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			/*
+						for (int n = -1; n < 2; n += 2)
+						{
+							glPushMatrix();
+							glScalef(0.5, 1, 1);
+							glTranslatef(n - 0.45, -0.45, 0);
+							for (float i = 0; i < sizeN; i++)
+								for (float j = 0; j < sizeN; j++)
+								{
+									Quad(i / sizeN, j / sizeN, 0.5 / sizeN);
+								}
+							glPopMatrix();
+						}/*
+			/*
+						glRotatef(theta, 1, 1, 1);
+			//			glRotatef(theta, 0.0f, 0.0f, 1.0f);
+
+						glBegin(GL_TRIANGLES);
+
+						glColor3f(1.0f, 0.0f, 0.0f);   glVertex2f(0.0f, 1.0f);
+						glColor3f(0.0f, 1.0f, 0.0f);   glVertex2f(0.87f, -0.5f);
+						glColor3f(0.0f, 0.0f, 1.0f);   glVertex2f(-0.87f, -0.5f);
+
+						glColor3f(1.0f, 0.0f, 0.0f);   glVertex2f(1, 1);
+						glColor3f(0.0f, 1.0f, 0.0f);   glVertex2f(-1, 1);
+						glColor3f(0.0f, 0.0f, 1.0f);   glVertex2f(1, -1);
+
+						glColor3f(1.0f, 0.0f, 0.0f);   glVertex2f(-1, -1);
+						glColor3f(0.0f, 1.0f, 0.0f);   glVertex2f(-1, 1);
+						glColor3f(0.0f, 0.0f, 1.0f);   glVertex2f(1, -1);
+
+						glEnd();
+			*/
+			glPushMatrix();
+			GridBox();
+
+			GameShow();
+			if (whoStep == PLAYERSTEP || (ships[0].keep == 0 || ships[1].keep == 0)) SetCursor(LoadCursor(NULL, IDC_ARROW));
+			else if (whoStep == COMPERSTEP) SetCursor(LoadCursor(NULL, IDC_WAIT));
+
+			//			GameShow(mapMy,-1);
+			//			GameShow(mapCm,1);
+
+			glPopMatrix();
+
+			//			Grid();
+
+			//			GridWindow();
+			//			Axis();
+			// 
+			//			glRotatef(theta, 0, 0, 1);
+			if (rMouse*0)
+			{
+				for (int sl = 0; sl < 50; sl++) Sleep(1);
+				rMouse = FALSE;
+			}
+			SwapBuffers(hDC);
+
+//			sprintf(c, "My super text!!!");
+//			TextOutA(hDC, 20, 50, c, strlen(c) + 1);
+// 
+			//			theta += 1.0f;//угол поворота
+			Sleep(10);
+
+		}
+	}
+
+	/* shutdown OpenGL */
+	DisableOpenGL(hwnd, hDC, hRC);
+
+	/* destroy the window explicitly */
+	DestroyWindow(hwnd);
+
+	return msg.wParam;
+}
+//HCURSOR WINAPI LoadCursor(HINSTANCE hinst, LPCSTR lpszCursor);
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	/*	//if ((ships[0].keep != 0 && ships[1].keep != 0) && whoStep == COMPERSTEP && uMsg == WM_SETCURSOR && LOWORD(lParam) == HTCLIENT)//отключение мыши
+		{
+			//SetCursor(NULL);
+			SetCursor(LoadCursor(NULL, IDC_WAIT));
+
+			return TRUE;
+		}*/
+
+		/*
+		Символическое имя	Описание
+	IDC_ARROW	Стандартный курсор в виде стрелки
+	IDC_CROSS	Курсор в виде перекрещивающихся линий
+	IDC_IBEAM	Текстовый курсор в виде буквы "I"
+	IDC_ICON	Пустая пиктограмма
+	IDC_SIZE	Курсор в виде четырех стрелок, указывающих в разных направлениях
+	IDC_SIZENESW	Двойная стрелка, указывающая в северо-восточном и юго-западном направлении
+	IDC_SIZENS	Двойная стрелка, указывающая в севером и южном направлении
+	IDC_SIZENWSE	Двойная стрелка, указывающая в северо-западном и юго-восточном направлении
+	IDC_SIZEWE	Двойная стрелка, указывающая в восточном и западном направлении
+	IDC_UPARROW	Вертикальная стрелка
+	IDC_WAIT	Курсор в виде песочных часов
+		*/
+
+	switch (uMsg)
+	{
+	case WM_CLOSE:
+		PostQuitMessage(0);
+		break;
+
+	case WM_LBUTTONDOWN:
+	{
+		POINTFLOAT pf;
+		ScreeToOpenGL(hwnd, LOWORD(lParam), HIWORD(lParam), &pf.x, &pf.y);
+		int x = floorf(pf.x);
+		int y = floorf(pf.y);
+		if (IsCellInMap(x, y) && ships[1].keep > 0 && whoStep == PLAYERSTEP)
+		{
+			map[1][x][y].open = TRUE;
+			if (!map[1][x][y].ship && !map[1][x][y].miss || ships[1].keep == 1)
+			{
+				whoStep = COMPERSTEP;
+				seconds = time(NULL);
+			}
+		}
+	}
+	break;
+
+/*	case WM_RBUTTONDOWN:
+	{
+		POINTFLOAT pf;
+		ScreeToOpenGL(hwnd, LOWORD(lParam), HIWORD(lParam), &pf.x, &pf.y);
+		int x = floorf(pf.x);
+		int y = floorf(pf.y);
+		rMouse = TRUE;
+	}
+	break;*/
+
+	case WM_SIZE://область вывода изображения OpenGL устанавливается в размер клиентского окна
+		widthO = LOWORD(lParam);
+		heightO = HIWORD(lParam);
+		WindowsSize(widthO, heightO);
+		break;
+
+	case WM_DESTROY:
+		return 0;
+
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
+		{
+		case VK_ESCAPE:
+			PostQuitMessage(0);
+			break;
+		}
+	}
+	break;
+
+	default:
+		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+
+	return 0;
+}
+
+void EnableOpenGL(HWND hwnd, HDC* hDC, HGLRC* hRC)
+{
+	PIXELFORMATDESCRIPTOR pfd;
+
+	int iFormat;
+
+	/* get the device context (DC) */
+	*hDC = GetDC(hwnd);
+
+	/* set the pixel format for the DC */
+	ZeroMemory(&pfd, sizeof(pfd));
+
+	pfd.nSize = sizeof(pfd);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 24;
+	pfd.cDepthBits = 16;
+	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	iFormat = ChoosePixelFormat(*hDC, &pfd);
+
+	SetPixelFormat(*hDC, iFormat, &pfd);
+
+	/* create and enable the render context (RC) */
+	*hRC = wglCreateContext(*hDC);
+
+	wglMakeCurrent(*hDC, *hRC);
+}
+
+void DisableOpenGL(HWND hwnd, HDC hDC, HGLRC hRC)
+{
+	wglMakeCurrent(NULL, NULL);
+	wglDeleteContext(hRC);
+	ReleaseDC(hwnd, hDC);
+}
