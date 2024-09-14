@@ -1,4 +1,4 @@
-п»ї#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
@@ -16,19 +16,19 @@ typedef enum { COMPER, PLAYER } TEstep;
 
 TEstep who = PLAYER;
 int widthO, heightO;
-int width = 1000;//СЂР°Р·РјРµСЂ РѕРєРЅР° РїРѕ С€РёСЂРёРЅРµ
-int height = 500;//СЂР°Р·РјРµСЂ РѕРєРЅР° РїРѕ РІС‹СЃРѕС‚Рµ
-#define mapW 10//РєРѕР»-РІРѕ РєР»РµС‚РѕРє РїРѕ С€РёСЂРёРЅРµ
-#define mapH 10//РєРѕР»-РІРѕ РєР»РµС‚РѕРє РїРѕ РІС‹СЃРѕС‚Рµ
-#define mapWS 0.99//РјР°СЃС€С‚Р°Р± РїРѕ С€РёСЂРёРЅРµ 0-1.0 (float)
-#define mapHS 0.99//РјР°СЃС€С‚Р°Р± РїРѕ РІС‹СЃРѕС‚Рµ 0-1.0 (float)
-#define delay 0.5//Р·Р°РґРµСЂР¶РєР° Р°РЅРёРјР°С†РёРё
-#define vectorDegree 2//СЃС‚РµРїРµРЅСЊ РІРµРєС‚РѕСЂР°, 2 - РїРѕ РџРёС„Р°РіРѕСЂСѓ РЅР° РїР»РѕСЃРєРѕСЃС‚Рё
-//#define missToConer 4//С…РѕРґ, РЅР° РєРѕС‚РѕСЂРѕРј Р±СЊС‘С‚ РїРѕ СѓРіР»Р°Рј, РµСЃР»Рё РЅРё РІ РѕРґРЅРѕРіРѕ РЅРµ РїРѕРїР°Р»
+int width = 1000;//размер окна по ширине
+int height = 500;//размер окна по высоте
+#define mapW 10//кол-во клеток по ширине
+#define mapH 10//кол-во клеток по высоте
+#define mapWS 0.99//масштаб по ширине 0-1.0 (float)
+#define mapHS 0.99//масштаб по высоте 0-1.0 (float)
+#define delay 0.5//задержка анимации
+#define vectorDegree 2//степень вектора, 2 - по Пифагору на плоскости
+//#define missToConer 4//ход, на котором бьёт по углам, если ни в одного не попал
 //int missToConer = 4;
-#define countStart 1//РєРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїСѓСЃРєРѕРІ, РµСЃР»Рё >1, С‚Рѕ РєРѕРјРї Р±СЊРµС‚ РІСЃРµРіРґР°
-#define target TRUE//С†РµР»СЊ РґР»СЏ СЃС‚СЂРµР»СЊР±С‹ РїРѕ РјРѕРёРј РєРѕСЂР°Р±Р»СЏРј FALSE РёР»Рё TRUE
-BOOL smart = TRUE;//РёРЅС‚РµР»Р»РµРєС‚ РєРѕРјРїР° FALSE РёР»Рё TRUE
+#define countStart 1//количество запусков, если >1, то комп бьет всегда
+#define target TRUE//цель для стрельбы по моим кораблям FALSE или TRUE
+BOOL smart = TRUE;//интелект компа FALSE или TRUE
 int n;
 #define shipSizes  { 4, 3, 3, 2, 2, 2, 1, 1, 1, 1 }
 //#define shipSizes { 3 };
@@ -41,17 +41,17 @@ time_t seconds;
 
 typedef struct
 {
-	BOOL ship;//РєРѕСЂР°Р±Р»СЊ
-	BOOL open;//РєР»РµС‚РєР° РѕС‚РєСЂС‹С‚Р°
-	BOOL miss;//РјРёРјРѕ
-	BOOL shot;//РїРѕРїР°Р»
-	BOOL kill;//СѓС‚РѕРїРёР»
-	signed char shipFront;//РєР»РµС‚РѕРє РґРѕ РєРѕРЅС†Р° РєРѕСЂР°Р±Р»СЏ СЃ С‚РµРєСѓС‰РµР№
-	signed char shipBack;//РєР»РµС‚РѕРє РґРѕ РЅР°С‡Р°Р»Р° РєРѕСЂР°Р±Р»СЏ СЃ С‚РµРєСѓС‰РµР№
-	BOOL dir;//РЅР°РїСЂРІР»РµРЅРёРµ FALSE-РіРѕСЂРёР·РѕРЅС‚ TRUE-РІРµСЂС‚РёРєР°Р»СЊ
-	float theta;//СѓРіРѕР» РїРѕРІРѕСЂРѕС‚Р°
-	float scale;//РјР°СЃС€С‚Р°Р± РїСЂРё Р°РЅРёРјР°С†РёРё
-	time_t seconds;//РЅР°С‡Р°Р»Рѕ Р°РЅРёРјР°С†РёРё
+	BOOL ship;//корабль
+	BOOL open;//клетка открыта
+	BOOL miss;//мимо
+	BOOL shot;//попал
+	BOOL kill;//утопил
+	signed char shipFront;//клеток до конца корабля с текущей
+	signed char shipBack;//клеток до начала корабля с текущей
+	BOOL dir;//напрвление FALSE-горизонт TRUE-вертикаль
+	float theta;//угол поворота
+	float scale;//масштаб при анимации
+	time_t seconds;//начало анимации
 } TCell;
 
 TCell map[2][mapW][mapH];
@@ -63,16 +63,16 @@ typedef enum { TOPGUNFLOAT, TOPGUNINT, TOPGUNSHIPS } TEtopGun;
 
 typedef struct
 {
-	int shot;//РїРѕРґР±РёС‚Рѕ РѕС‚СЃРµРєРѕРІ РєРѕСЂР°Р±Р»РµР№ РІСЃРµРіРѕ
-	int keep;//РѕСЃС‚Р°Р»РѕСЃСЊ РѕС‚СЃРµРєРѕРІ РєРѕСЂР°Р±Р»РµР№ РІСЃРµРіРѕ
-	int miss;//РєРѕР»РёС‡РµСЃС‚РІРѕ С…РѕРґРѕРІ РїРѕ РїСЂРѕРјР°С…Р°Рј
-	int miss1;//РєРѕР»РёС‡РµСЃС‚РІРѕ С…РѕРґРѕРІ РїРѕ РїРµСЂРІРёС‡РЅС‹Рј РїСЂРѕРјР°С…Р°Рј
-	int all;//РєРѕР»РёС‡РµСЃС‚РІРѕ РІС‹СЃС‚СЂРµР»РѕРІ РІСЃРµРіРѕ
-//	int gunF;//С€Р°Рі, РЅР° РєРѕС‚РѕСЂРѕРј Р±СѓРґРµС‚ GunFloat
-//	BOOL coner;//РІС‹СЃС‚СЂРµР»С‹ РІ СѓРіР»С‹ РїСЂРѕРјР°С…РѕРІ
-	TEtopGun topGun;//РЅР°Р·РІР°РЅРёРµ РїСѓС€РєРё
+	int shot;//подбито отсеков кораблей всего
+	int keep;//осталось отсеков кораблей всего
+	int miss;//количество ходов по промахам
+	int miss1;//количество ходов по первичным промахам
+	int all;//количество выстрелов всего
+//	int gunF;//шаг, на котором будет GunFloat
+//	BOOL coner;//выстрелы в углы промахов
+	TEtopGun topGun;//название пушки
 } TShips;
-TShips step[2];//0 - РїРѕР»Рµ PLAYER, 1 - РїРѕР»Рµ COMPER
+TShips step[2];//0 - поле PLAYER, 1 - поле COMPER
 
 typedef struct
 {
@@ -89,10 +89,10 @@ BOOL IsCellInMap(int x, int y)
 	return x >= 0 && y >= 0 && x < mapW && y < mapH;
 }
 
-void ShowTopGun(int i, int j)//РєРѕСЂР°Р±Р»СЊ
+void ShowTopGun(int i, int j)//корабль
 {
-	float gap = 0.1;//Р·Р°Р·РѕСЂ РѕС‚ РєСЂР°СЏ РєР»РµС‚РєРё 0-0,5
-	glEnable(GL_LINE_SMOOTH);//СЃРіР»Р°Р¶РёРІР°РЅРёРµ Р»РёРЅРёР№
+	float gap = 0.1;//зазор от края клетки 0-0,5
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
 	if (step[0].topGun == TOPGUNSHIPS) glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 0.04);
 	else glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 0.01);
 	if (map[0][i][j].ship) glColor3f(1.0, 0.0, 0.0);
@@ -130,9 +130,9 @@ void ShowTopGun(int i, int j)//РєРѕСЂР°Р±Р»СЊ
 	}
 }
 
-void ShowShip()//РєРѕСЂР°Р±Р»СЊ
+void ShowShip()//корабль
 {
-	float gap = 0.0;//Р·Р°Р·РѕСЂ РѕС‚ РєСЂР°СЏ РєР»РµС‚РєРё 0-0,5
+	float gap = 0.0;//зазор от края клетки 0-0,5
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor3f(0.3, 1.0, 0.6); glVertex2f(gap, 1 - gap);
 	glColor3f(0.2, 0.9, 0.5); glVertex2f(1 - gap, 1 - gap);
@@ -141,7 +141,7 @@ void ShowShip()//РєРѕСЂР°Р±Р»СЊ
 	glEnd();
 }
 
-void ShowShipMiss()//(С‚РѕС‡РєР°) РїСЂРѕРјР°Р·Р°Р», РјРёРјРѕ, С…РѕР»РѕСЃС‚РѕР№ РІС‹СЃС‚СЂРµР»
+void ShowShipMiss()//(точка) промазал, мимо, холостой выстрел
 {
 	glEnable(GL_POINT_SMOOTH);
 	glPointSize(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * 0.15);
@@ -152,10 +152,10 @@ void ShowShipMiss()//(С‚РѕС‡РєР°) РїСЂРѕРјР°Р·Р°Р», РјРёРјРѕ, С…РѕР»РѕСЃС‚РѕР№ Р
 	glDisable(GL_POINT_SMOOTH);
 }
 
-void ShowShipShot()//РїРѕРїР°Р», СЂР°РЅРёР», РїРѕРґР±РёР»
+void ShowShipShot()//попал, ранил, подбил
 {
-	float gap = 0.1;//Р·Р°Р·РѕСЂ РѕС‚ РєСЂР°СЏ РєР»РµС‚РєРё 0-0,5
-	glEnable(GL_LINE_SMOOTH);//СЃРіР»Р°Р¶РёРІР°РЅРёРµ Р»РёРЅРёР№
+	float gap = 0.1;//зазор от края клетки 0-0,5
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
 	glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap);
 	glColor3f(1, 0, 0);
 	glBegin(GL_LINES);
@@ -167,9 +167,9 @@ void ShowShipShot()//РїРѕРїР°Р», СЂР°РЅРёР», РїРѕРґР±РёР»
 	glDisable(GL_LINE_SMOOTH);
 }
 
-void ShowShipKill()//СѓС‚РѕРїРёР»
+void ShowShipKill()//утопил
 {
-	float gap = 0.05;//Р·Р°Р·РѕСЂ РѕС‚ РєСЂР°СЏ РєР»РµС‚РєРё 0-0,5
+	float gap = 0.05;//зазор от края клетки 0-0,5
 	//	glEnable(GL_POINT_SMOOTH);
 	glPointSize(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 1.45);
 	glBegin(GL_POINTS);
@@ -179,7 +179,7 @@ void ShowShipKill()//СѓС‚РѕРїРёР»
 	glVertex2f(1 - gap, 1 - gap);
 	glVertex2f(1 - gap, gap);
 	glEnd();
-	//	glDisable(GL_POINT_SMOOTH);	glEnable(GL_LINE_SMOOTH);//СЃРіР»Р°Р¶РёРІР°РЅРёРµ Р»РёРЅРёР№
+	//	glDisable(GL_POINT_SMOOTH);	glEnable(GL_LINE_SMOOTH);//сглаживание линий
 	glLineWidth(sqrtf(mapWS * mapHS / mapW / mapH * widthO * heightO) * gap * 1.45);
 	glColor3f(1, 0, 0);
 	glBegin(GL_LINE_LOOP);
@@ -204,7 +204,7 @@ void ShowField()
 
 void ShowFieldOpen()
 {
-	float gap = 0.11;//Р·Р°Р·РѕСЂ РѕС‚ РєСЂР°СЏ РєР»РµС‚РєРё 0-0,5
+	float gap = 0.11;//зазор от края клетки 0-0,5
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor3f(0, 0.2, 0.4); glVertex2f(gap, 1 - gap);
 	glColor3f(0, 0.25, 0.5); glVertex2f(1 - gap, 1 - gap);	glVertex2f(gap, gap);
@@ -212,7 +212,7 @@ void ShowFieldOpen()
 	glEnd();
 }
 
-void ScreeToOpenGL(HWND hwnd, int x, int y, float* ox, float* oy)//РїРµСЂРµРІРѕРґ РєРѕРѕСЂРґРёРЅР°С‚ РѕРєРЅР° РІ OPENGL
+void ScreeToOpenGL(HWND hwnd, int x, int y, float* ox, float* oy)//перевод координат окна в OPENGL
 {
 	RECT rct;
 	GetClientRect(hwnd, &rct);
@@ -225,7 +225,7 @@ void ScreeToOpenGL(HWND hwnd, int x, int y, float* ox, float* oy)//РїРµСЂРµРІРѕР
 //	*oy = mapH - y / (float)rct.bottom * mapH;
 }
 
-void Generate_Ships()//Р¤СѓРЅРєС†РёСЏ РґР»СЏ РіРµРЅРµСЂР°С†РёРё РєРѕСЂР°Р±Р»РµР№ РІ СЃР»СѓС‡Р°Р№РЅС‹С… РїРѕР·РёС†РёСЏС… РЅР° РґРѕСЃРєРµ. РљРѕСЂР°Р±Р»Рё РјРѕРіСѓС‚ Р±С‹С‚СЊ СЂР°Р·Р»РёС‡РЅС‹С… СЂР°Р·РјРµСЂРѕРІ, РЅР°РїСЂРёРјРµСЂ, 1, 2, 3, 4 РєР»РµС‚РєРё.
+void Generate_Ships()//Функция для генерации кораблей в случайных позициях на доске. Корабли могут быть различных размеров, например, 1, 2, 3, 4 клетки.
 {
 	if (countStart > 1)	srand(clock());
 	else srand(time(NULL));
@@ -238,20 +238,20 @@ void Generate_Ships()//Р¤СѓРЅРєС†РёСЏ РґР»СЏ РіРµРЅРµСЂР°С†РёРё РєРѕСЂР°Р±Р»РµР№
 		ship_count = sizeof(ship_sizes) / sizeof(ship_sizes[0]);// *(1 - n);
 		for (int i = 0; i < ship_count; i++)
 		{
-			//if (n == 1) i = ship_count - 1;//1 РєРѕСЂР°Р±Р»СЊ Сѓ РєРѕРјРїР°
+			//if (n == 1) i = ship_count - 1;//1 корабль у компа
 			int ship_size = ship_sizes[i];
 			int x, y, dir;
-			int iteration = 1000;//РЅРµ РїРѕРјРµС‰Р°СЋС‚СЃСЏ РєРѕСЂР°Р±Р»Рё
+			int iteration = 1000;//не помещаются корабли
 			do
 			{
 				x = rand() % mapW;
 				y = rand() % mapH;
 				dir = rand() % 2;
 				//dir = 0;
-				iteration--;//РЅРµ РїРѕРјРµС‰Р°СЋС‚СЃСЏ РєРѕСЂР°Р±Р»Рё
-				if (iteration < 0) break;//РЅРµ РїРѕРјРµС‰Р°СЋС‚СЃСЏ РєРѕСЂР°Р±Р»Рё
+				iteration--;//не помещаются корабли
+				if (iteration < 0) break;//не помещаются корабли
 			} while (!is_valid(n, x, y, ship_size, dir));
-			if (iteration < 0) continue;//РЅРµ РїРѕРјРµС‰Р°СЋС‚СЃСЏ РєРѕСЂР°Р±Р»Рё
+			if (iteration < 0) continue;//не помещаются корабли
 			for (int j = 0; j < ship_size; j++)
 			{
 				if (dir == 0)
@@ -274,14 +274,14 @@ void Generate_Ships()//Р¤СѓРЅРєС†РёСЏ РґР»СЏ РіРµРЅРµСЂР°С†РёРё РєРѕСЂР°Р±Р»РµР№
 	}
 }
 
-int is_valid(int n, int x, int y, int size, int dir)//Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂСЏРµС‚, РјРѕР¶РЅРѕ Р»Рё СЂР°Р·РјРµСЃС‚РёС‚СЊ РєРѕСЂР°Р±Р»СЊ РІ РґР°РЅРЅРѕР№ РїРѕР·РёС†РёРё.Р¤СѓРЅРєС†РёСЏ РґРѕР»Р¶РЅР° СѓС‡РёС‚С‹РІР°С‚СЊ, С‡С‚Рѕ РєРѕСЂР°Р±Р»Рё РЅРµ РґРѕР»Р¶РЅС‹ РЅР°Р»РµРіР°С‚СЊ РґСЂСѓРі РЅР° РґСЂСѓРіР°, Рё РґРѕР»Р¶РЅС‹ РЅР°С…РѕРґРёС‚СЊСЃСЏ РІ РїСЂРµРґРµР»Р°С… РґРѕСЃРєРё
+int is_valid(int n, int x, int y, int size, int dir)//Функция проверяет, можно ли разместить корабль в данной позиции.Функция должна учитывать, что корабли не должны налегать друг на друга, и должны находиться в пределах доски
 {
-	if ((x + size > mapW) * (1 - dir) || (y + size * dir > mapH) * dir) return 0;//РєРѕРЅС‚СЂРѕР»СЊ СЂР°Р·РјРµС‰РµРЅРёСЏ РєРѕСЂР°Р±Р»СЏ РІ РіСЂР°РЅРёС†Р°С… РїРѕР»СЏ
-	for (int i = x; i < x + size * (1 - dir) + dir; i++)//РїСЂРѕРІРµСЂРєР° РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕРіРѕ РєРѕСЂР°Р±Р»СЏ
-		for (int j = y; j < y + size * dir + (1 - dir); j++)//РїСЂРѕРІРµСЂРєР° РІРµСЂС‚РёРєР°Р»СЊРЅРѕРіРѕ РєРѕСЂР°Р±Р»СЏ
-			for (int ii = i - 1; ii <= i + 1; ii++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі i
-				for (int jj = j - 1; jj <= j + 1; jj++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі j
-					if (ii >= 0 && ii < mapW && jj >= 0 && jj < mapH)//РєРѕРЅС‚СЂРѕР»СЊ РіСЂР°РЅРёС† РїРѕР»СЏ РІРѕРєСЂСѓРі i Рё j
+	if ((x + size > mapW) * (1 - dir) || (y + size * dir > mapH) * dir) return 0;//контроль размещения корабля в границах поля
+	for (int i = x; i < x + size * (1 - dir) + dir; i++)//проверка горизонтального корабля
+		for (int j = y; j < y + size * dir + (1 - dir); j++)//проверка вертикального корабля
+			for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+				for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+					if (ii >= 0 && ii < mapW && jj >= 0 && jj < mapH)//контроль границ поля вокруг i и j
 						if (map[n][ii][jj].ship != FALSE) return 0;
 	return 1;
 }
@@ -295,7 +295,7 @@ void Decorate_Game_Over(int i, int j)
 	glTranslatef(-0.5, -0.5, 0);
 }
 
-void Decorate(int i, int j)//Р°РЅРёРјР°С†РёСЏ СЃС‚СЂРµР»СЊР±С‹
+void Decorate(int i, int j)//анимация стрельбы
 {
 	Sleep(1);
 	glTranslatef(0.5, 0.5, 0);
@@ -384,9 +384,9 @@ void Miss_Around_Ship_TRUE(int i, int j)
 	else  i -= (shipBack - 1);
 	for (int deck = 0; deck < ship_size; deck++)
 	{
-		for (int ii = i - 1; ii <= i + 1; ii++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі i
-			for (int jj = j - 1; jj <= j + 1; jj++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі j
-				if (IsCellInMap(ii, jj))//РєРѕРЅС‚СЂРѕР»СЊ РіСЂР°РЅРёС† РїРѕР»СЏ РІРѕРєСЂСѓРі i Рё j
+		for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+			for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+				if (IsCellInMap(ii, jj))//контроль границ поля вокруг i и j
 					if (!map[n][ii][jj].ship && !map[n][ii][jj].kill && !map[n][ii][jj].open)
 					{
 						map[n][ii][jj].open = TRUE;
@@ -401,9 +401,9 @@ void Miss_Around_Ship_TRUE(int i, int j)
 void Miss_Coner_Ship_TRUE(int i, int j)
 {
 	n = who;
-	for (int ii = i - 1; ii <= i + 1; ii++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі i
-		for (int jj = j - 1; jj <= j + 1; jj++)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі j
-			if (IsCellInMap(ii, jj))//РєРѕРЅС‚СЂРѕР»СЊ РіСЂР°РЅРёС† РїРѕР»СЏ РІРѕРєСЂСѓРі i Рё j
+	for (int ii = i - 1; ii <= i + 1; ii++)//проверка вокруг i
+		for (int jj = j - 1; jj <= j + 1; jj++)//проверка вокруг j
+			if (IsCellInMap(ii, jj))//контроль границ поля вокруг i и j
 				if (!map[n][ii][jj].miss && !map[n][ii][jj].open && abs(i - ii) == abs(j - jj))
 				{
 					map[n][ii][jj].open = TRUE;
@@ -412,7 +412,7 @@ void Miss_Coner_Ship_TRUE(int i, int j)
 				}
 }
 
-float TopGunShotMinMaxFloat(int i, int j, int minmax)//minmax = -1/+1 - РёС‰РµС‚ min/max
+float TopGunShotMinMaxFloat(int i, int j, int minmax)//minmax = -1/+1 - ищет min/max
 {
 	int mm;
 	if (minmax < 0) mm = TopGunInt();
@@ -675,81 +675,81 @@ float TopGunFloat()
 float TopGun()
 {
 	return TopGunFloat();
-//	if (step[0].miss1 < 8) return TopGunShips(); else return TopGunFloat();//Р’С‹РІРѕРґ_54.262_2.4 Р’С‹РІРѕРґ_54.258_2.3
-//	if (step[0].miss1 < 8) return TopGunShips(); else if (MaxFromArrayShips() > 1) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.414_2.3 Р’С‹РІРѕРґ_54.184_2.3 Р’С‹РІРѕРґ_54.412_2.3
-//	if (step[0].miss1 < 8) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 3) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.370_2.4 Р’С‹РІРѕРґ_54.305_2.4 Р’С‹РІРѕРґ_54.263_2.4
-//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 2) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.128_2.3 Р’С‹РІРѕРґ_54.228_2.3 Р’С‹РІРѕРґ_54.324_2.4
-//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 3) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.317_2.3 Р’С‹РІРѕРґ_54.186_2.3 Р’С‹РІРѕРґ_54.213_2.3 Р’С‹РІРѕРґ_54.156_2.3
+//	if (step[0].miss1 < 8) return TopGunShips(); else return TopGunFloat();//Вывод_54.262_2.4 Вывод_54.258_2.3
+//	if (step[0].miss1 < 8) return TopGunShips(); else if (MaxFromArrayShips() > 1) return TopGunFloat(); else return TopGunInt();//Вывод_54.414_2.3 Вывод_54.184_2.3 Вывод_54.412_2.3
+//	if (step[0].miss1 < 8) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 3) return TopGunFloat(); else return TopGunInt();//Вывод_54.370_2.4 Вывод_54.305_2.4 Вывод_54.263_2.4
+//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 2) return TopGunFloat(); else return TopGunInt();//Вывод_54.128_2.3 Вывод_54.228_2.3 Вывод_54.324_2.4
+//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 3) return TopGunFloat(); else return TopGunInt();//Вывод_54.317_2.3 Вывод_54.186_2.3 Вывод_54.213_2.3 Вывод_54.156_2.3
 
-//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 4) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.330_2.3 Р’С‹РІРѕРґ_54.119_2.3 Р’С‹РІРѕРґ_54.440_2.4
-//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 1) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.409_2.3 Р’С‹РІРѕРґ_54.350_2.4 Р’С‹РІРѕРґ_54.260_2.3
-//	if (step[0].miss1 < 7) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 2) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.218_2.3 Р’С‹РІРѕРґ_54.280_2.3 Р’С‹РІРѕРґ_54.315_2.5
-//	if (step[0].miss1 < 7) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 4) return TopGunFloat(); else return TopGunInt();//Р’С‹РІРѕРґ_54.320_2.3 Р’С‹РІРѕРґ_54.245_2.3 Р’С‹РІРѕРґ_54.341_2.4
+//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 4) return TopGunFloat(); else return TopGunInt();//Вывод_54.330_2.3 Вывод_54.119_2.3 Вывод_54.440_2.4
+//	if (step[0].miss1 < 9) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 1) return TopGunFloat(); else return TopGunInt();//Вывод_54.409_2.3 Вывод_54.350_2.4 Вывод_54.260_2.3
+//	if (step[0].miss1 < 7) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 2) return TopGunFloat(); else return TopGunInt();//Вывод_54.218_2.3 Вывод_54.280_2.3 Вывод_54.315_2.5
+//	if (step[0].miss1 < 7) return TopGunShips(); else if (MaxFromArrayShips() > 1 || step[0].keep > 4) return TopGunFloat(); else return TopGunInt();//Вывод_54.320_2.3 Вывод_54.245_2.3 Вывод_54.341_2.4
 
-//	if (step[0].shot < 4) return TopGunShips(); else  return TopGunInt();//Р’С‹РІРѕРґ_54.300_2.1 Р’С‹РІРѕРґ_54.667_2.3 Р’С‹РІРѕРґ_54.693_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 16) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.568_2.2
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 10) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.634_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 8) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.639_2.2
-//	if (step[0].shot < 4) return TopGunShips(); else if (MaxFromArrayShips() > 1) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.560_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (MaxFromArrayShips() > 2) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.675_2.6
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 2) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.472_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 4) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.542_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 8) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.451_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 1) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.402_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 0) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.602_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else  return TopGunInt();//Вывод_54.300_2.1 Вывод_54.667_2.3 Вывод_54.693_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 16) return TopGunFloat(); return TopGunInt();//Вывод_54.568_2.2
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 10) return TopGunFloat(); return TopGunInt();//Вывод_54.634_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].shot < 8) return TopGunFloat(); return TopGunInt();//Вывод_54.639_2.2
+//	if (step[0].shot < 4) return TopGunShips(); else if (MaxFromArrayShips() > 1) return TopGunFloat(); return TopGunInt();//Вывод_54.560_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (MaxFromArrayShips() > 2) return TopGunFloat(); return TopGunInt();//Вывод_54.675_2.6
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 2) return TopGunFloat(); return TopGunInt();//Вывод_54.472_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 4) return TopGunFloat(); return TopGunInt();//Вывод_54.542_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 8) return TopGunFloat(); return TopGunInt();//Вывод_54.451_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 1) return TopGunFloat(); return TopGunInt();//Вывод_54.402_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep <= 0) return TopGunFloat(); return TopGunInt();//Вывод_54.602_2.3
 
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep >= 0) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.461_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 0) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.470_2.2 Р’С‹РІРѕРґ_54.491_2.2
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 1) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.626_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 2) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.501_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 3) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.486_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 4) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.631_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 5) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.637_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 6) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.475_2.3
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 7) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.671_2.4
-//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 8) return TopGunFloat(); return TopGunInt();//Р’С‹РІРѕРґ_54.620_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep >= 0) return TopGunFloat(); return TopGunInt();//Вывод_54.461_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 0) return TopGunFloat(); return TopGunInt();//Вывод_54.470_2.2 Вывод_54.491_2.2
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 1) return TopGunFloat(); return TopGunInt();//Вывод_54.626_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 2) return TopGunFloat(); return TopGunInt();//Вывод_54.501_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 3) return TopGunFloat(); return TopGunInt();//Вывод_54.486_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 4) return TopGunFloat(); return TopGunInt();//Вывод_54.631_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 5) return TopGunFloat(); return TopGunInt();//Вывод_54.637_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 6) return TopGunFloat(); return TopGunInt();//Вывод_54.475_2.3
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 7) return TopGunFloat(); return TopGunInt();//Вывод_54.671_2.4
+//	if (step[0].shot < 4) return TopGunShips(); else if (step[0].keep > 8) return TopGunFloat(); return TopGunInt();//Вывод_54.620_2.3
 
-//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunInt();//Р’С‹РІРѕРґ_54.300_2.1
-//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.231_2.0
+//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunInt();//Вывод_54.300_2.1
+//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunFloat();//Вывод_54.231_2.0
 
 //if (step[0].all < step[0].miss + step[0].gunF) return TopGunInt(); else  return TopGunFloat();
-///	if (step[0].all < step[0].miss + step[0].gunF) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.670_2.5
-//	if (step[0].all < step[0].miss + 0) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_55.187_3.9
-//	if (step[0].all < step[0].miss + 1) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.376_2.0
-//	if (step[0].all < step[0].miss + 2) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.538_2.1
-//	if (step[0].all < step[0].miss + 3) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.519_2.2
-//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.109_2.0 Р’С‹РІРѕРґ_54.375_2.3
-//	if (step[0].all < step[0].miss1 + 4) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.498_2.2
-//	if (step[0].all < step[0].miss + 5) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.151_2.2
-//	if (step[0].all < step[0].miss + 6) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.807_2.5
-//	if (step[0].all < step[0].miss + 7) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.883_2.7
-//	if (step[0].all < step[0].miss + 8) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.714_2.4
-//	if (step[0].all < step[0].miss + 9) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.839_2.4
-//	if (step[0].all < step[0].miss + 10) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_55.006_2.5
-//	return TopGunInt();//Р’С‹РІРѕРґ_54.799_2.3 Р’С‹РІРѕРґ_54.404_2.2 Р’С‹РІРѕРґ_54.287_2.1
-//	return TopGunFloat();//Р’С‹РІРѕРґ_55.344_4.1 Р’С‹РІРѕРґ_55.199_3.9 Р’С‹РІРѕРґ_55.273_4.0
-//	return TopGunShips();//Р’С‹РІРѕРґ_55.963_2.4 Р’С‹РІРѕРґ_54.852_2.1 Р’С‹РІРѕРґ_55.400_2.5
-///	if (step[0].all < step[0].miss + step[0].gunF || MaxFromArrayShips() < 2) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.987_2.1
-///	if (MaxFromArrayShips() < 2 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.727_2.1
-///	if (MaxFromArrayShips() < 2 || 2 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.517_2.0
-///	if (MaxFromArrayShips() < 3 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_54.913_2.3
-///	if (MaxFromArrayShips() < 0 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_55.234_3.9
-///	if (MaxFromArrayShips() < 2 || 4 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Р’С‹РІРѕРґ_55.573_2.4
+///	if (step[0].all < step[0].miss + step[0].gunF) return TopGunShips(); else  return TopGunFloat();//Вывод_54.670_2.5
+//	if (step[0].all < step[0].miss + 0) return TopGunShips(); else  return TopGunFloat();//Вывод_55.187_3.9
+//	if (step[0].all < step[0].miss + 1) return TopGunShips(); else  return TopGunFloat();//Вывод_54.376_2.0
+//	if (step[0].all < step[0].miss + 2) return TopGunShips(); else  return TopGunFloat();//Вывод_54.538_2.1
+//	if (step[0].all < step[0].miss + 3) return TopGunShips(); else  return TopGunFloat();//Вывод_54.519_2.2
+//	if (step[0].all < step[0].miss + 4) return TopGunShips(); else  return TopGunFloat();//Вывод_54.109_2.0 Вывод_54.375_2.3
+//	if (step[0].all < step[0].miss1 + 4) return TopGunShips(); else  return TopGunFloat();//Вывод_54.498_2.2
+//	if (step[0].all < step[0].miss + 5) return TopGunShips(); else  return TopGunFloat();//Вывод_54.151_2.2
+//	if (step[0].all < step[0].miss + 6) return TopGunShips(); else  return TopGunFloat();//Вывод_54.807_2.5
+//	if (step[0].all < step[0].miss + 7) return TopGunShips(); else  return TopGunFloat();//Вывод_54.883_2.7
+//	if (step[0].all < step[0].miss + 8) return TopGunShips(); else  return TopGunFloat();//Вывод_54.714_2.4
+//	if (step[0].all < step[0].miss + 9) return TopGunShips(); else  return TopGunFloat();//Вывод_54.839_2.4
+//	if (step[0].all < step[0].miss + 10) return TopGunShips(); else  return TopGunFloat();//Вывод_55.006_2.5
+//	return TopGunInt();//Вывод_54.799_2.3 Вывод_54.404_2.2 Вывод_54.287_2.1
+//	return TopGunFloat();//Вывод_55.344_4.1 Вывод_55.199_3.9 Вывод_55.273_4.0
+//	return TopGunShips();//Вывод_55.963_2.4 Вывод_54.852_2.1 Вывод_55.400_2.5
+///	if (step[0].all < step[0].miss + step[0].gunF || MaxFromArrayShips() < 2) return TopGunShips(); else  return TopGunFloat();//Вывод_54.987_2.1
+///	if (MaxFromArrayShips() < 2 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Вывод_54.727_2.1
+///	if (MaxFromArrayShips() < 2 || 2 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Вывод_54.517_2.0
+///	if (MaxFromArrayShips() < 3 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Вывод_54.913_2.3
+///	if (MaxFromArrayShips() < 0 || 3 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Вывод_55.234_3.9
+///	if (MaxFromArrayShips() < 2 || 4 < MaxFromArrayShips()) return TopGunShips(); else  return TopGunFloat();//Вывод_55.573_2.4
 //	return TopGunShips();
-///	if (step[0].miss1 == 0) return TopGunInt(); else if (step[0].miss1 % 2) return TopGunShips(); else return TopGunFloat();//Р’С‹РІРѕРґ_54.951_2.4
+///	if (step[0].miss1 == 0) return TopGunInt(); else if (step[0].miss1 % 2) return TopGunShips(); else return TopGunFloat();//Вывод_54.951_2.4
 
 }
 
 int OutFile(int n0, int n1, int n2, int n3)
 {
-	//	char s[40] = "РџСЂРёРІРµС‚ РјРёСЂ\n";
+	//	char s[40] = "Привет мир\n";
 	FILE* f;
-	f = fopen("Р’С‹РІРѕРґ.txt", "a");
+	f = fopen("Вывод.txt", "a");
 	if (f != NULL) fprintf(f, "%d%s%d%s%d%s%d%s", n0, "\t", n1, "\t", n2, "\t", n3, "\n");
 	fclose(f);
 }
 
-int Direction(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ РјРµРЅСЊС€СѓСЋ/Р±РѕР»СЊС€СѓСЋ СЃС‚РѕСЂРѕРЅСѓ
+int Direction(int i, int j, int dir, int minmax)//minmax = -1/+1 - бьёт в меньшую/большую сторону
 {
 	if (minmax == 0) minmax = rand() % 2 * 2 - 1;
 	if (dir)
@@ -772,7 +772,7 @@ int Direction(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ Р
 	}
 }
 
-int Direction0(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ РјРµРЅСЊС€СѓСЋ/Р±РѕР»СЊС€СѓСЋ СЃС‚РѕСЂРѕРЅСѓ
+int Direction0(int i, int j, int dir, int minmax)//minmax = -1/+1 - бьёт в меньшую/большую сторону
 {
 	//if (minmax == 0) minmax = rand() % 2 * 2 - 1;
 	int MaxShips = MaxFromArrayShips();
@@ -781,8 +781,8 @@ int Direction0(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ 
 		if (j == 0) return 1; else if (j == mapH - 1) return -1;
 		if (map[0][i][j - 1].open) return 1;
 		else if (map[0][i][j + 1].open) return -1;
-		if ((int)gun[i][j - 1].vertical < MaxShips) return -1;//СЂР°Р·РјРµСЂ РєРѕСЂР°Р±Р»СЏ Р±РѕР»СЊС€Рµ С‡РµРј РґРѕ РіСЂР°РЅРёС†С‹ РёР»Рё miss
-		else if ((int)gun[i][j + 1].vertical < MaxShips) return 1;//СЂР°Р·РјРµСЂ РєРѕСЂР°Р±Р»СЏ Р±РѕР»СЊС€Рµ С‡РµРј РґРѕ РіСЂР°РЅРёС†С‹ РёР»Рё miss
+		if ((int)gun[i][j - 1].vertical < MaxShips) return -1;//размер корабля больше чем до границы или miss
+		else if ((int)gun[i][j + 1].vertical < MaxShips) return 1;//размер корабля больше чем до границы или miss
 		if (gun[i][j - 1].vertical < gun[i][j + 1].vertical) return minmax;
 		else if (gun[i][j - 1].vertical > gun[i][j + 1].vertical) return -minmax;
 		else return rand() % 2 * 2 - 1;
@@ -792,8 +792,8 @@ int Direction0(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ 
 		if (i == 0) return 1; else if (i == mapW - 1) return -1;
 		if (map[0][i - 1][j].open) return 1;
 		else if (map[0][i + 1][j].open) return -1;
-		if ((int)gun[i - 1][j].horizont < MaxShips) return -1;//СЂР°Р·РјРµСЂ РєРѕСЂР°Р±Р»СЏ Р±РѕР»СЊС€Рµ С‡РµРј РґРѕ РіСЂР°РЅРёС†С‹ РёР»Рё miss
-		else if ((int)gun[i + 1][j].horizont < MaxShips) return 1;//СЂР°Р·РјРµСЂ РєРѕСЂР°Р±Р»СЏ Р±РѕР»СЊС€Рµ С‡РµРј РґРѕ РіСЂР°РЅРёС†С‹ РёР»Рё miss
+		if ((int)gun[i - 1][j].horizont < MaxShips) return -1;//размер корабля больше чем до границы или miss
+		else if ((int)gun[i + 1][j].horizont < MaxShips) return 1;//размер корабля больше чем до границы или miss
 		if (gun[i - 1][j].horizont < gun[i + 1][j].horizont) return minmax;
 		else if (gun[i - 1][j].horizont > gun[i + 1][j].horizont) return -minmax;
 		else return rand() % 2 * 2 - 1;
@@ -801,11 +801,11 @@ int Direction0(int i, int j, int dir, int minmax)//minmax = -1/+1 - Р±СЊС‘С‚ РІ 
 }
 
 /*
-BOOL OpenConer(int i, int j)//РґР»СЏ СЃС‚СЂРµР»СЊР±С‹ РїРѕ СѓРіР»Р°Рј РѕС‚ miss (РїСЂРѕРјР°С…Рё)
+BOOL OpenConer(int i, int j)//для стрельбы по углам от miss (промахи)
 {
-	for (int ii = i - 1; ii <= i + 1; ii += 2)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі i
-		for (int jj = j - 1; jj <= j + 1; jj += 2)//РїСЂРѕРІРµСЂРєР° РІРѕРєСЂСѓРі j
-			if (IsCellInMap(ii, jj))//РєРѕРЅС‚СЂРѕР»СЊ РіСЂР°РЅРёС† РїРѕР»СЏ РІРѕРєСЂСѓРі i Рё j
+	for (int ii = i - 1; ii <= i + 1; ii += 2)//проверка вокруг i
+		for (int jj = j - 1; jj <= j + 1; jj += 2)//проверка вокруг j
+			if (IsCellInMap(ii, jj))//контроль границ поля вокруг i и j
 			{
 				if (map[0][ii][jj].open) return TRUE;
 			}
@@ -813,16 +813,16 @@ BOOL OpenConer(int i, int j)//РґР»СЏ СЃС‚СЂРµР»СЊР±С‹ РїРѕ СѓРіР»Р°Рј РѕС‚ miss 
 }
 */
 
-void SetCells(int i, int j)//РїСЂРѕРІРµСЂРєР° Рё СѓСЃС‚Р°РЅРѕРІРєР° РѕС‚РєСЂС‹С‚С‹С… РєР»РµС‚РѕРє - РјРёРјРѕ, РїРѕРїР°Р», СѓС‚РѕРїРёР» Рё РїРѕРґСЃС‡С‘С‚ РІС‹СЃС‚СЂРµР»РѕРІ
+void SetCells(int i, int j)//проверка и установка открытых клеток - мимо, попал, утопил и подсчёт выстрелов
 {
 	n = who;
 	if (map[n][i][j].open)
 	{
-		if (!map[n][i][j].shot && !map[n][i][j].miss) step[n].all++;//РїРѕРґСЃС‡С‘С‚ РІСЃРµС… РІС‹СЃС‚СЂРµР»РѕРІ
+		if (!map[n][i][j].shot && !map[n][i][j].miss) step[n].all++;//подсчёт всех выстрелов
 		if (!map[n][i][j].ship && !map[n][i][j].miss)
 		{
-			step[n].miss++;//РїРѕРґСЃС‡С‘С‚ РїСЂРѕРјР°С…РѕРІ (РІС‹СЃС‚СЂРµР»С‹ РјРёРјРѕ)
-			if (n == 0 && !go.now.shot) step[n].miss1++;//РїРѕРґСЃС‡С‘С‚ РїРµСЂРІРёС‡РЅС‹С… РїСЂРѕРјР°С…РѕРІ (РІС‹СЃС‚СЂРµР»С‹ РјРёРјРѕ)
+			step[n].miss++;//подсчёт промахов (выстрелы мимо)
+			if (n == 0 && !go.now.shot) step[n].miss1++;//подсчёт первичных промахов (выстрелы мимо)
 			map[n][i][j].miss = TRUE;
 			map[n][i][j].seconds = time(NULL);
 		}
@@ -830,23 +830,23 @@ void SetCells(int i, int j)//РїСЂРѕРІРµСЂРєР° Рё СѓСЃС‚Р°РЅРѕРІРєР° РѕС‚РєСЂС‹С‚
 		{
 			if (step[n].keep >= 0)
 			{
-				step[n].keep--;//РїРѕРґСЃС‡С‘С‚ РѕСЃС‚Р°РІС€РёС…СЃСЏ РєРѕСЂР°Р±Р»РµР№ РїРѕ РїР°Р»СѓР±Р°Рј
-				step[n].shot++;//РїРѕРґСЃС‡С‘С‚ РїРѕРґР±РёС‚С‹С… РєРѕСЂР°Р±Р»РµР№ РїРѕ РїР°Р»СѓР±Р°Рј
+				step[n].keep--;//подсчёт оставшихся кораблей по палубам
+				step[n].shot++;//подсчёт подбитых кораблей по палубам
 			}
 			map[n][i][j].shot = TRUE;
-			if (!map[n][i][j].kill && n == 1) Miss_Coner_Ship_TRUE(i, j);//РѕС‚РєСЂС‹С‚РёРµ РєР»РµС‚РѕРє РїРѕ СѓРіР»Р°Рј РѕС‚СЃРµРєР° РєРѕСЂР°Р±Р»СЏ
+			if (!map[n][i][j].kill && n == 1) Miss_Coner_Ship_TRUE(i, j);//открытие клеток по углам отсека корабля
 			map[n][i][j].seconds = time(NULL);
-			if (Ship_Kill(i, j))//РїСЂРѕРІРµСЂРєР° СѓС‚РѕРїР»РµРЅРёРµ РєРѕСЂР°Р±Р»СЏ
+			if (Ship_Kill(i, j))//проверка утопление корабля
 			{
 				map[n][i][j].seconds = time(NULL);
-				Ship_Kill_TRUE(i, j);//СѓСЃС‚Р°РЅРѕРІРєР° СѓС‚РѕРїР»РµРЅРёСЏ РєРѕСЂР°Р±Р»СЏ
-				Miss_Around_Ship_TRUE(i, j);//РѕС‚РєСЂС‹С‚РёРµ РєР»РµС‚РѕРє РІРѕ РєСЂСѓРі РєРѕСЂР°Р±Р»СЏ
+				Ship_Kill_TRUE(i, j);//установка утопления корабля
+				Miss_Around_Ship_TRUE(i, j);//открытие клеток во круг корабля
 			}
 		}
 	}
 }
 
-void CompStep()//РСЃСЃРєСѓСЃС‚РІРµРЅРЅС‹Р№ РёРЅС‚РµР»РµРєС‚, РїРѕС‡С‚Рё
+void CompStep()//Исскуственный интелект, почти
 {
 	int i, j, ii, jj, edit;
 	if (countStart > 1)	srand(clock());
@@ -1047,9 +1047,9 @@ void Progress(float p)
 	//glColor3f(1 - p, p, 0);
 	glColor3f((p < 0.5) ? 1 : 2 - 2 * p, (p < 0.5) ? 2 * p : 1, 0);
 
-	glEnable(GL_LINE_SMOOTH);//СЃРіР»Р°Р¶РёРІР°РЅРёРµ Р»РёРЅРёР№
-	glEnable(GL_LINE_STIPPLE);//РїСЂРµСЂС‹РІРёСЃС‚Р°СЏ Р»РёРЅРёСЏ
-	glLineStipple(2, 0b0101010101010101);//РјР°СЃРєР°
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
+	glEnable(GL_LINE_STIPPLE);//прерывистая линия
+	glLineStipple(2, 0b0101010101010101);//маска
 
 	glBegin(GL_LINES);
 
@@ -1077,8 +1077,8 @@ void GameShow()
 	{
 		glPushMatrix();
 		glTranslatef(-mapW * 0.5 * (1 - (2 * n - 1) / mapWS), -mapH * 0.5, 0);
-		//	glTranslatef(-mapW * 0.5 * (1 + 1 / mapWS), -mapH * 0.5, 0);//Р»РµРІРѕРµ РїРѕР»Рµ
-		//	glTranslatef(-mapW * 0.5 * (1 - 1 / mapWS), -mapH * 0.5, 0);//РїСЂР°РІРѕРµ РїРѕР»Рµ
+		//	glTranslatef(-mapW * 0.5 * (1 + 1 / mapWS), -mapH * 0.5, 0);//левое поле
+		//	glTranslatef(-mapW * 0.5 * (1 - 1 / mapWS), -mapH * 0.5, 0);//правое поле
 		//**************************************************************************************************************
 		for (int j = 0; j < mapH; j++)
 			for (int i = 0; i < mapW; i++)
@@ -1089,9 +1089,9 @@ void GameShow()
 				if ((time(NULL) - map[n][i][j].seconds) <= delay && countStart == 1) Decorate(i, j);
 				ShowField();
 				if (step[n].keep == 0 && (step[0].keep == 0 || step[1].keep == 0) && countStart == 1) Decorate_Game_Over(i, j);
-				if (step[0].keep == 0 && n == 1 && map[n][i][j].ship) ShowShip();//РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РєРѕСЂР°Р±Р»РµР№ РєРѕРјРїР°
-				//if (map[n][i][j].ship) ShowShip();//РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РєРѕСЂР°Р±Р»РµР№ РєРѕРјРїР° РІСЃРµРіРґР°
-				if (n == 0 && map[n][i][j].ship) ShowShip();//РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РјРѕРёС… РєРѕСЂР°Р±Р»РµР№
+				if (step[0].keep == 0 && n == 1 && map[n][i][j].ship) ShowShip();//отображение кораблей компа
+				//if (map[n][i][j].ship) ShowShip();//отображение кораблей компа всегда
+				if (n == 0 && map[n][i][j].ship) ShowShip();//отображение моих кораблей
 				if (map[n][i][j].open)
 				{
 					if (map[n][i][j].ship) ShowShip();
@@ -1099,7 +1099,7 @@ void GameShow()
 					if (map[n][i][j].shot) ShowShipShot();
 					if (map[n][i][j].kill) ShowShipKill();
 				}
-				if (target && smart && n == 0 && gun[i][j].diagonal == TopGun() && !go.now.shot && TopGun() > 1 && countStart == 1 && step[0].miss1 > 0) ShowTopGun(i, j);//С†РµР»СЊ РґР»СЏ СЃС‚СЂРµР»СЊР±С‹ РїРѕ РјРѕРёРј РєРѕСЂР°Р±Р»СЏРј
+				if (target && smart && n == 0 && gun[i][j].diagonal == TopGun() && !go.now.shot && TopGun() > 1 && countStart == 1 && step[0].miss1 > 0) ShowTopGun(i, j);//цель для стрельбы по моим кораблям
 				glPopMatrix();
 			}
 		//**************************************************************************************************************
@@ -1123,9 +1123,9 @@ void Axis()
 	glLineWidth(1);
 	glColor3f(1, 0, 0);
 
-	glEnable(GL_LINE_SMOOTH);//СЃРіР»Р°Р¶РёРІР°РЅРёРµ Р»РёРЅРёР№
-	glEnable(GL_LINE_STIPPLE);//РїСЂРµСЂС‹РІРёСЃС‚Р°СЏ Р»РёРЅРёСЏ
-	glLineStipple(2, 0b1111100110011111);//РјР°СЃРєР°
+	glEnable(GL_LINE_SMOOTH);//сглаживание линий
+	glEnable(GL_LINE_STIPPLE);//прерывистая линия
+	glLineStipple(2, 0b1111100110011111);//маска
 
 	glBegin(GL_LINES);
 	glVertex2f(-1, 0);
@@ -1250,22 +1250,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	/* create main window */
 	hwnd = CreateWindowEx(0,
 		"GLSample",
-		"РњРѕСЂСЃРєРѕР№ Р±РѕР№ - В© red king",
+		"Морской бой - © red king",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		width,//СЂР°Р·РјРµСЂ РѕРєРЅР° РїРѕ X
-		height,//СЂР°Р·РјРµСЂ РѕРєРЅР° РїРѕ Y
+		width,//размер окна по X
+		height,//размер окна по Y
 		NULL,
 		NULL,
 		hInstance,
 		NULL);
 
-	ShowWindow(hwnd, nCmdShow);//РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РѕРєРЅР°
+	ShowWindow(hwnd, nCmdShow);//отображение окна
 
 	/* enable OpenGL for the window */
 	EnableOpenGL(hwnd, &hDC, &hRC);
-	WindowsSize(widthO, heightO);//СЂР°Р·РјРµСЂ РѕРєРЅР° РїСЂРё СЃС‚Р°СЂС‚Рµ
+	WindowsSize(widthO, heightO);//размер окна при старте
 	
 	if (mapWS > 1 || mapHS > 2) return 0;
 
@@ -1273,10 +1273,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 //	int missToConerFinish = (countStart == 1) ? missToConer : 8;
 //	for (missToConer = missToConerStart; missToConer <= missToConerFinish; missToConer++)
 //	{
-		int repeatStart = 1; int repeatFinish = countStart;//РєРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїСѓСЃРєРѕРІ
-		if (countStart > 1) remove("Р’С‹РІРѕРґ.txt");
-		FILE* f;					//РІС‹РІРѕРґ РІ С„Р°Р№Р»
-		f = fopen("Р’С‹РІРѕРґ.txt", "a");//РІС‹РІРѕРґ РІ С„Р°Р№Р»
+		int repeatStart = 1; int repeatFinish = countStart;//количество запусков
+		if (countStart > 1) remove("Вывод.txt");
+		FILE* f;					//вывод в файл
+		f = fopen("Вывод.txt", "a");//вывод в файл
 		int sum = 0, sumShot1 = 0;
 		float mid, midShot1;
 		int repeat;
@@ -1312,36 +1312,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				{
 					/* OpenGL animation code goes here */
 
-					glClearColor(0.0f, 0.0f, 0.5f, 0.0f);//С†РІРµС‚ РѕРєРЅР°
+					glClearColor(0.0f, 0.0f, 0.5f, 0.0f);//цвет окна
 					glClear(GL_COLOR_BUFFER_BIT);
 
 					glPushMatrix();
 					if (countStart == 1) GridBox();
 
-					if (countStart > 1)//РєРѕРјРї С…РѕРґРёС‚ СЃР°Рј РїРѕ СЃРµР±Рµ
+					if (countStart > 1)//комп ходит сам по себе
 					{
 						who = COMPER;
 						CompStep();
 					}
-					else if (who == COMPER && time(NULL) - seconds >= delay + 0.5) CompStep();//<---РѕС‡РµСЂРµРґСЊ РєРѕРјРїР°
+					else if (who == COMPER && time(NULL) - seconds >= delay + 0.5) CompStep();//<---очередь компа
 
 					if (countStart == 1 || step[0].keep == 0) GameShow();
 
-					if (countStart == 1 && (who == PLAYER || step[0].keep == 0 || step[1].keep == 0)) SetCursor(LoadCursor(NULL, IDC_ARROW));//РєСѓСЂСЃРѕСЂ СЃС‚СЂРµР»РєР°
-					else if (who == COMPER && countStart == 1) SetCursor(LoadCursor(NULL, IDC_WAIT));//РєСѓСЂСЃРѕСЂ РѕР¶РёРґР°РЅРёРµ (С‡Р°СЃС‹)
+					if (countStart == 1 && (who == PLAYER || step[0].keep == 0 || step[1].keep == 0)) SetCursor(LoadCursor(NULL, IDC_ARROW));//курсор стрелка
+					else if (who == COMPER && countStart == 1) SetCursor(LoadCursor(NULL, IDC_WAIT));//курсор ожидание (часы)
 					/*
-	РЎРёРјРІРѕР»РёС‡РµСЃРєРѕРµ РёРјСЏ	РћРїРёСЃР°РЅРёРµ
-	IDC_ARROW	РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РєСѓСЂСЃРѕСЂ РІ РІРёРґРµ СЃС‚СЂРµР»РєРё
-	IDC_CROSS	РљСѓСЂСЃРѕСЂ РІ РІРёРґРµ РїРµСЂРµРєСЂРµС‰РёРІР°СЋС‰РёС…СЃСЏ Р»РёРЅРёР№
-	IDC_IBEAM	РўРµРєСЃС‚РѕРІС‹Р№ РєСѓСЂСЃРѕСЂ РІ РІРёРґРµ Р±СѓРєРІС‹ "I"
-	IDC_ICON	РџСѓСЃС‚Р°СЏ РїРёРєС‚РѕРіСЂР°РјРјР°
-	IDC_SIZE	РљСѓСЂСЃРѕСЂ РІ РІРёРґРµ С‡РµС‚С‹СЂРµС… СЃС‚СЂРµР»РѕРє, СѓРєР°Р·С‹РІР°СЋС‰РёС… РІ СЂР°Р·РЅС‹С… РЅР°РїСЂР°РІР»РµРЅРёСЏС…
-	IDC_SIZENESW	Р”РІРѕР№РЅР°СЏ СЃС‚СЂРµР»РєР°, СѓРєР°Р·С‹РІР°СЋС‰Р°СЏ РІ СЃРµРІРµСЂРѕ-РІРѕСЃС‚РѕС‡РЅРѕРј Рё СЋРіРѕ-Р·Р°РїР°РґРЅРѕРј РЅР°РїСЂР°РІР»РµРЅРёРё
-	IDC_SIZENS	Р”РІРѕР№РЅР°СЏ СЃС‚СЂРµР»РєР°, СѓРєР°Р·С‹РІР°СЋС‰Р°СЏ РІ СЃРµРІРµСЂРѕРј Рё СЋР¶РЅРѕРј РЅР°РїСЂР°РІР»РµРЅРёРё
-	IDC_SIZENWSE	Р”РІРѕР№РЅР°СЏ СЃС‚СЂРµР»РєР°, СѓРєР°Р·С‹РІР°СЋС‰Р°СЏ РІ СЃРµРІРµСЂРѕ-Р·Р°РїР°РґРЅРѕРј Рё СЋРіРѕ-РІРѕСЃС‚РѕС‡РЅРѕРј РЅР°РїСЂР°РІР»РµРЅРёРё
-	IDC_SIZEWE	Р”РІРѕР№РЅР°СЏ СЃС‚СЂРµР»РєР°, СѓРєР°Р·С‹РІР°СЋС‰Р°СЏ РІ РІРѕСЃС‚РѕС‡РЅРѕРј Рё Р·Р°РїР°РґРЅРѕРј РЅР°РїСЂР°РІР»РµРЅРёРё
-	IDC_UPARROW	Р’РµСЂС‚РёРєР°Р»СЊРЅР°СЏ СЃС‚СЂРµР»РєР°
-	IDC_WAIT	РљСѓСЂСЃРѕСЂ РІ РІРёРґРµ РїРµСЃРѕС‡РЅС‹С… С‡Р°СЃРѕРІ
+	Символическое имя	Описание
+	IDC_ARROW	Стандартный курсор в виде стрелки
+	IDC_CROSS	Курсор в виде перекрещивающихся линий
+	IDC_IBEAM	Текстовый курсор в виде буквы "I"
+	IDC_ICON	Пустая пиктограмма
+	IDC_SIZE	Курсор в виде четырех стрелок, указывающих в разных направлениях
+	IDC_SIZENESW	Двойная стрелка, указывающая в северо-восточном и юго-западном направлении
+	IDC_SIZENS	Двойная стрелка, указывающая в севером и южном направлении
+	IDC_SIZENWSE	Двойная стрелка, указывающая в северо-западном и юго-восточном направлении
+	IDC_SIZEWE	Двойная стрелка, указывающая в восточном и западном направлении
+	IDC_UPARROW	Вертикальная стрелка
+	IDC_WAIT	Курсор в виде песочных часов
 		*/
 
 					glPopMatrix();
@@ -1361,17 +1361,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			Sleep(10);
 			sumShot1 += step0shot;
 			sum += step[0].all;
-			if (f != NULL) fprintf(f, "%d%s%d%s%d%s", repeat, "\t", step[0].all, "\t", step0shot, "\n");//РІС‹РІРѕРґ РІ С„Р°Р№Р»
+			if (f != NULL) fprintf(f, "%d%s%d%s%d%s", repeat, "\t", step[0].all, "\t", step0shot, "\n");//вывод в файл
 		}
-		fclose(f);																							//РІС‹РІРѕРґ РІ С„Р°Р№;
+		fclose(f);																							//вывод в фай;
 		if (countStart > 1)
 		{
 			midShot1 = roundf((float)sumShot1 / (repeat - 1) * 10) / 10;
 			mid = roundf((float)sum / (repeat - 1) * 1000) / 1000;
 			char str[20];
-	//		sprintf(str, "%s%2.d%s%.3f%s%.1f%s", "Р’С‹РІРѕРґ_", missToConer, "_", mid, "_", midShot1, ".txt");
-			sprintf(str, "%s%.3f%s%.1f%s", "Р’С‹РІРѕРґ_", mid, "_", midShot1, ".txt");
-			rename("Р’С‹РІРѕРґ.txt", str);
+	//		sprintf(str, "%s%2.d%s%.3f%s%.1f%s", "Вывод_", missToConer, "_", mid, "_", midShot1, ".txt");
+			sprintf(str, "%s%.3f%s%.1f%s", "Вывод_", mid, "_", midShot1, ".txt");
+			rename("Вывод.txt", str);
 		}
 //	}
 	/* shutdown OpenGL */
@@ -1412,7 +1412,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	break;
 
-	case WM_SIZE://РѕР±Р»Р°СЃС‚СЊ РІС‹РІРѕРґР° РёР·РѕР±СЂР°Р¶РµРЅРёСЏ OpenGL СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚СЃСЏ РІ СЂР°Р·РјРµСЂ РєР»РёРµРЅС‚СЃРєРѕРіРѕ РѕРєРЅР°
+	case WM_SIZE://область вывода изображения OpenGL устанавливается в размер клиентского окна
 		widthO = LOWORD(lParam);
 		heightO = HIWORD(lParam);
 		WindowsSize(widthO, heightO);
